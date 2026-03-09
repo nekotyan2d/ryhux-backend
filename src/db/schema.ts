@@ -1,4 +1,15 @@
-import { AnyPgColumn, bigserial, integer, pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
+import {
+    AnyPgColumn,
+    bigserial,
+    integer,
+    pgTable,
+    serial,
+    text,
+    timestamp,
+    unique,
+    uuid,
+    varchar,
+} from "drizzle-orm/pg-core";
 export const usersTable = pgTable("user", {
     user_id: bigserial({ mode: "bigint" }).primaryKey(),
     public_id: uuid().unique(),
@@ -20,14 +31,14 @@ export const userInfoTable = pgTable("user_info", {
     status: varchar({ length: 100 }),
 });
 
-export const userRolesTable = pgTable("user_role", {
-    user_id: bigserial({ mode: "bigint" })
-        .references(() => usersTable.user_id, { onDelete: "cascade" })
-        .unique(),
-    role: serial()
-        .references(() => rolesTable.role_id, { onDelete: "cascade" })
-        .unique(),
-});
+export const userRolesTable = pgTable(
+    "user_role",
+    {
+        user_id: bigserial({ mode: "bigint" }).references(() => usersTable.user_id, { onDelete: "cascade" }),
+        role: serial().references(() => rolesTable.role_id, { onDelete: "cascade" }),
+    },
+    (table) => [unique().on(table.user_id, table.role)],
+);
 
 export const rolesTable = pgTable("roles", {
     role_id: serial().primaryKey(),
@@ -42,25 +53,27 @@ export const userTagsTable = pgTable("user_tag", {
     created_at: timestamp().notNull().defaultNow(),
 });
 
-export const userSubscriptionTable = pgTable("user_subscription", {
-    follower_id: bigserial({ mode: "bigint" })
-        .references(() => usersTable.user_id, { onDelete: "cascade" })
-        .unique(),
-    following_id: bigserial({ mode: "bigint" })
-        .references(() => usersTable.user_id, { onDelete: "cascade" })
-        .unique(),
-    created_at: timestamp().notNull().defaultNow(),
-});
+export const userSubscriptionTable = pgTable(
+    "user_subscription",
+    {
+        follower_id: bigserial({ mode: "bigint" }).references(() => usersTable.user_id, { onDelete: "cascade" }),
+        following_id: bigserial({ mode: "bigint" }).references(() => usersTable.user_id, { onDelete: "cascade" }),
+        created_at: timestamp().notNull().defaultNow(),
+    },
+    (table) => {
+        return [unique().on(table.follower_id, table.following_id)];
+    },
+);
 
-export const userBlockTable = pgTable("user_block", {
-    blocker_id: bigserial({ mode: "bigint" })
-        .references(() => usersTable.user_id, { onDelete: "cascade" })
-        .unique(),
-    blocked_id: bigserial({ mode: "bigint" })
-        .references(() => usersTable.user_id, { onDelete: "cascade" })
-        .unique(),
-    created_at: timestamp().notNull().defaultNow(),
-});
+export const userBlockTable = pgTable(
+    "user_block",
+    {
+        blocker_id: bigserial({ mode: "bigint" }).references(() => usersTable.user_id, { onDelete: "cascade" }),
+        blocked_id: bigserial({ mode: "bigint" }).references(() => usersTable.user_id, { onDelete: "cascade" }),
+        created_at: timestamp().notNull().defaultNow(),
+    },
+    (table) => [unique().on(table.blocker_id, table.blocked_id)],
+);
 
 export const postTable = pgTable("post", {
     post_id: bigserial({ mode: "bigint" }).primaryKey(),
