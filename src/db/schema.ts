@@ -1,15 +1,4 @@
-import {
-    AnyPgColumn,
-    bigserial,
-    integer,
-    pgTable,
-    primaryKey,
-    serial,
-    text,
-    timestamp,
-    uuid,
-    varchar,
-} from "drizzle-orm/pg-core";
+import { AnyPgColumn, bigserial, integer, pgTable, serial, text, timestamp, uuid, varchar } from "drizzle-orm/pg-core";
 export const usersTable = pgTable("user", {
     user_id: bigserial({ mode: "bigint" }).primaryKey(),
     public_id: uuid().unique(),
@@ -109,4 +98,14 @@ export const commentTable = pgTable("comment", {
     text: text(),
     created_at: timestamp().notNull().defaultNow(),
     updated_at: timestamp().notNull().defaultNow(),
+});
+
+export const refreshTokenTable = pgTable("refresh_token", {
+    hash: varchar().primaryKey(),
+    user_id: bigserial({ mode: "bigint" })
+        .notNull()
+        .references(() => usersTable.user_id, { onDelete: "cascade" }),
+    expires_at: timestamp().notNull(),
+    created_at: timestamp().notNull().defaultNow(),
+    user_agent: varchar().notNull().default("unknown"),
 });
