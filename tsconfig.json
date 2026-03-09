@@ -23,6 +23,6 @@
             "@/*": ["./*"]
         }
     },
-    "include": ["src/**/*", "drizzle.config.ts"],
-    "exclude": ["node_modules", "dist", "*.config.ts"]
+    "include": ["src/**/*"],
+    "exclude": ["node_modules", "dist"]
 }

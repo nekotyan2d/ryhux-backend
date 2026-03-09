@@ -5,11 +5,11 @@
     "license": "AGPL-3.0-only",
     "author": "",
     "type": "module",
-    "main": "dist/index.js",
+    "main": "dist/index.mjs",
     "scripts": {
         "dev": "tsx --watch src/index.ts",
-        "build": "tsc",
-        "start": "node dist/index.js",
+        "build": "tsdown src/index.ts",
+        "start": "node dist/index.mjs",
         "lint": "eslint .",
         "lint:fix": "eslint . --fix",
         "type-check": "tsc --noEmit"
@@ -22,12 +22,12 @@
         "@types/pg": "^8.18.0",
         "drizzle-kit": "^0.31.9",
         "eslint": "^10.0.2",
+        "tsdown": "^0.21.0",
         "tsx": "^4.21.0",
         "typescript": "^5.9.3",
         "typescript-eslint": "^8.56.1"
     },
     "dependencies": {
-        "@fastify/autoload": "^6.3.1",
         "@fastify/env": "^5.0.3",
         "@fastify/swagger": "^9.7.0",
         "@fastify/swagger-ui": "^5.2.5",

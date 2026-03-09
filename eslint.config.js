@@ -1,10 +1,13 @@
+// @ts-check
+import eslint from "@eslint/js";
 import { defineConfig } from "eslint/config";
 import tseslint from "typescript-eslint";
 
 export default defineConfig(
-    js.configs.recommended,
-    tseslint.configs.recommended,
+    eslint.configs.recommended,
+    ...tseslint.configs.recommended,
     {
+        files: ["**/*.ts"],
         languageOptions: {
             parserOptions: {
                 projectService: true,

@@ -1,7 +1,6 @@
 import fastify from "fastify";
 import "dotenv/config";
 import { env } from "./env";
-import fastifyAutoload from "@fastify/autoload";
 import fastifySwagger from "@fastify/swagger";
 import fastifySwaggerUi from "@fastify/swagger-ui";
 import {
@@ -13,10 +12,9 @@ import {
 } from "fastify-zod-openapi";
 import { AppError } from "./errors";
 import { cleanupExpiredRefreshTokens } from "./features/auth/auth.service";
+import { authRoutes } from "./features/auth";
 
 const app = fastify();
-
-const __dirname = import.meta.dirname;
 
 await app.register(fastifyZodOpenApiPlugin);
 app.setValidatorCompiler(validatorCompiler);
@@ -49,9 +47,7 @@ await app.register(fastifySwaggerUi, {
     routePrefix: "/docs",
 });
 
-await app.register(fastifyAutoload, {
-    dir: `${__dirname}/routes`,
-});
+await app.register(authRoutes, { prefix: "/auth" });
 
 app.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {
