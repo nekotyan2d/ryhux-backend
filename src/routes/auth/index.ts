@@ -1,5 +1,5 @@
 import { FastifyInstance } from "fastify";
-import { authRoutes } from "../../features/auth";
+import { authRoutes } from "@/features/auth";
 
 /**
  * Autoload bridge for auth feature

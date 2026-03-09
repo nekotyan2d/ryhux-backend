@@ -1,6 +1,6 @@
 import { eq, lt } from "drizzle-orm";
-import { db } from "../../db";
-import { refreshTokenTable, usersTable, userCredentialsTable, userInfoTable } from "../../db/schema";
+import { db } from "@/db";
+import { refreshTokenTable, usersTable, userCredentialsTable, userInfoTable } from "@/db/schema";
 import type { RefreshTokenRecord, UserCredentials, UserInfo, User, UserPublic } from "./auth.types";
 import { v7 as uuidv7 } from "uuid";
 

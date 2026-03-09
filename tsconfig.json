@@ -17,7 +17,11 @@
         "noUnusedParameters": true,
         "noFallthroughCasesInSwitch": true,
         "noUncheckedIndexedAccess": true,
-        "skipLibCheck": true
+        "skipLibCheck": true,
+        "baseUrl": "./src",
+        "paths": {
+            "@/*": ["./*"]
+        }
     },
     "include": ["src/**/*", "drizzle.config.ts"],
     "exclude": ["node_modules", "dist", "*.config.ts"]

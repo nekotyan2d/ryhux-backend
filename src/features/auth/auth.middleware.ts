@@ -1,5 +1,5 @@
 import { FastifyReply, FastifyRequest } from "fastify";
-import { UnauthorizedError } from "../../errors";
+import { UnauthorizedError } from "@/errors";
 import { verifyAccessToken } from "./auth.service";
 
 export async function authenticateAccessToken(request: FastifyRequest, _reply: FastifyReply): Promise<void> {

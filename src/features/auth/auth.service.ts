@@ -1,5 +1,5 @@
 import bcrypt from "bcrypt";
-import { ConflictError, UnauthorizedError } from "../../errors";
+import { ConflictError, UnauthorizedError } from "@/errors";
 import {
     createAuthUser,
     createRefreshTokenRecord,
@@ -21,7 +21,7 @@ import type {
     UserPublic,
 } from "./auth.types";
 import jwt, { JwtPayload } from "jsonwebtoken";
-import { env } from "../../env";
+import { env } from "@/env";
 import crypto from "crypto";
 import { v7 as uuidv7 } from "uuid";
 

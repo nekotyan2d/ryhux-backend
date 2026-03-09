@@ -10,7 +10,7 @@ import type {
     RegisterBody,
     RegisterResponse,
 } from "./auth.types";
-import { UnauthorizedError } from "../../errors";
+import { UnauthorizedError } from "@/errors";
 
 /**
  * Register controller - handles user registration requests
