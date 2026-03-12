@@ -12,7 +12,7 @@ import {
 } from "drizzle-orm/pg-core";
 export const usersTable = pgTable("user", {
     user_id: bigserial({ mode: "bigint" }).primaryKey(),
-    public_id: uuid().unique(),
+    public_id: uuid().unique().notNull(),
 });
 
 export const userCredentialsTable = pgTable("user_credential", {

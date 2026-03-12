@@ -10,7 +10,9 @@ export default defineConfig(
         files: ["**/*.ts"],
         languageOptions: {
             parserOptions: {
-                projectService: true,
+                projectService: {
+                    allowDefaultProject: ["drizzle.config.ts"],
+                },
                 tsconfigRootDir: import.meta.dirname,
             },
         },

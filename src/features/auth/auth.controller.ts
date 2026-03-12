@@ -1,16 +1,9 @@
 import { FastifyReply, FastifyRequest } from "fastify";
 import { login, logout, refresh, register } from "./auth.service";
-import { toUserPublic } from "./auth.repository";
-import type {
-    LoginBody,
-    LoginResponse,
-    MeResponse,
-    RefreshBody,
-    RefreshResponse,
-    RegisterBody,
-    RegisterResponse,
-} from "./auth.types";
 import { UnauthorizedError } from "@/errors";
+import { LoginBody, RefreshBody, RegisterBody } from "./types/inputs";
+import { LoginResponse, MeResponse, RefreshResponse, RegisterResponse } from "./types/responses";
+import { getBaseUserByPublicId } from "@/repository/user";
 
 /**
  * Register controller - handles user registration requests
@@ -74,7 +67,7 @@ export async function meController(request: FastifyRequest, reply: FastifyReply)
         throw new UnauthorizedError("Missing authentication context");
     }
 
-    const user = await toUserPublic(request.auth.userId);
+    const user = await getBaseUserByPublicId(request.auth.userId);
 
     reply.code(200);
     return { user };

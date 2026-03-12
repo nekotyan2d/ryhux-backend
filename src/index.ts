@@ -13,6 +13,7 @@ import {
 import { AppError } from "./errors";
 import { cleanupExpiredRefreshTokens } from "./features/auth/auth.service";
 import { authRoutes } from "./features/auth";
+import { usersRoutes } from "./features/users";
 
 const app = fastify();
 
@@ -37,7 +38,10 @@ await app.register(fastifySwagger, {
             },
         },
         servers: [{ url: `http://localhost:${env.PORT}`, description: "Local development server" }],
-        tags: [{ name: "auth", description: "Authentication related endpoints" }],
+        tags: [
+            { name: "auth", description: "Authentication related endpoints" },
+            { name: "users", description: "User related endpoints" },
+        ],
     },
     transform: fastifyZodOpenApiTransform,
     transformObject: fastifyZodOpenApiTransformObject,
@@ -48,6 +52,7 @@ await app.register(fastifySwaggerUi, {
 });
 
 await app.register(authRoutes, { prefix: "/auth" });
+await app.register(usersRoutes, { prefix: "/users" });
 
 app.setErrorHandler((error, request, reply) => {
     if (error instanceof AppError) {

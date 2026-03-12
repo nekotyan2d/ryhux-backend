@@ -7,19 +7,15 @@ import {
     refreshController,
     registerController,
 } from "./auth.controller";
-import { authenticateAccessToken } from "./auth.middleware";
+import { authenticateAccessToken } from "@/middleware/auth";
+import { loginBodySchema, logoutBodySchema, refreshBodySchema, registerBodySchema } from "./schemas/inputs";
 import {
-    logoutBodySchema,
-    logoutResponseSchema,
-    refreshBodySchema,
-    refreshResponseSchema,
-    meResponseSchema,
-    registerBodySchema,
-    registerResponseSchema,
-    loginBodySchema,
     loginResponseSchema,
-    errorResponseSchema,
-} from "./auth.schemas";
+    meResponseSchema,
+    refreshResponseSchema,
+    registerResponseSchema,
+} from "./schemas/responses";
+import { errorResponseSchema } from "@/schemas/errors";
 
 /**
  * Auth routes plugin
@@ -99,7 +95,7 @@ const authRoutes: FastifyPluginAsync = async (app) => {
                 summary: "User logout",
                 body: logoutBodySchema,
                 response: {
-                    204: logoutResponseSchema,
+                    204: logoutBodySchema,
                     400: errorResponseSchema,
                 },
             },

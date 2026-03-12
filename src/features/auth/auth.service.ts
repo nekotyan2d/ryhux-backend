@@ -6,52 +6,44 @@ import {
     deleteExpiredRefreshTokens,
     deleteRefreshTokenByHash,
     findRefreshTokenByHash,
-    findUserByEmail,
-    getUserById,
-    toUserPublic,
 } from "./auth.repository";
-import type {
-    LoginBody,
-    LoginResponse,
-    LogoutBody,
-    RefreshBody,
-    RefreshResponse,
-    RegisterBody,
-    TokenPair,
-    UserPublic,
-} from "./auth.types";
 import jwt, { JwtPayload } from "jsonwebtoken";
 import { env } from "@/env";
 import crypto from "crypto";
 import { v7 as uuidv7 } from "uuid";
+import { findUserByEmail, findUserById, getBaseUserById } from "@/repository/user";
+import { LoginResponse, RefreshResponse } from "./types/responses";
+import { LoginBody, LogoutBody, RefreshBody, RegisterBody } from "./types/inputs";
+import { BasePublicUser } from "@/types/users";
+import { TokenPair } from "./types/entities";
 
 const SALT_ROUNDS = 10;
 
 type AccessPayload = JwtPayload & {
     typ: "access";
+    userId?: string;
 };
 
 type RefreshPayload = JwtPayload & {
     typ: "refresh";
     jti: string;
+    userId?: string;
 };
 
-/**
- * Hash a password using bcrypt
- */
 async function hashPassword(password: string): Promise<string> {
     return bcrypt.hash(password, SALT_ROUNDS);
 }
 
-/**
- * Verify a password against a hash
- */
 async function verifyPassword(password: string, hash: string): Promise<boolean> {
     return bcrypt.compare(password, hash);
 }
 
-async function issueTokensForUser(userId: bigint, userAgent: string): Promise<LoginResponse["tokens"]> {
-    const refreshToken = signRefreshToken(userId);
+async function issueTokensForUser(
+    userId: bigint,
+    publicId: string,
+    userAgent: string,
+): Promise<LoginResponse["tokens"]> {
+    const refreshToken = signRefreshToken(publicId);
     const refreshTokenHash = hashRefreshToken(refreshToken);
 
     await createRefreshTokenRecord({
@@ -61,36 +53,26 @@ async function issueTokensForUser(userId: bigint, userAgent: string): Promise<Lo
         userAgent,
     });
 
-    return buildTokenPair(userId, refreshToken);
+    return buildTokenPair(publicId, refreshToken);
 }
 
-/**
- * Register a new user
- */
-export async function register(data: RegisterBody): Promise<UserPublic> {
-    // Check if email already exists
+export async function register(data: RegisterBody): Promise<BasePublicUser> {
     const existingUser = await findUserByEmail(data.email);
     if (existingUser) {
         throw new ConflictError("Email already registered");
     }
 
-    // Hash password
     const passwordHash = await hashPassword(data.password);
 
-    // Create user with credentials and info
     const userId = await createAuthUser({
         email: data.email,
         passwordHash,
         nick: data.nick,
     });
 
-    // Return public user data
-    return toUserPublic(userId);
+    return getBaseUserById(userId);
 }
 
-/**
- * Login user with email and password
- */
 export async function login(data: LoginBody, userAgent: string): Promise<LoginResponse> {
     // Find user by email
     const credentials = await findUserByEmail(data.email);
@@ -104,8 +86,8 @@ export async function login(data: LoginBody, userAgent: string): Promise<LoginRe
         throw new UnauthorizedError("Invalid credentials");
     }
 
-    const user = await toUserPublic(credentials.user_id);
-    const tokens = await issueTokensForUser(credentials.user_id, userAgent);
+    const user = await getBaseUserById(credentials.user_id);
+    const tokens = await issueTokensForUser(credentials.user_id, user.user_id, userAgent);
 
     return {
         user,
@@ -126,7 +108,8 @@ export async function refresh(data: RefreshBody, userAgent: string): Promise<Ref
         throw new UnauthorizedError("Refresh token revoked or not found");
     }
 
-    if (existingToken.user_id !== payload.userId) {
+    const user = await findUserById(existingToken.user_id);
+    if (user.public_id !== payload.userId) {
         await deleteRefreshTokenByHash(hash);
         throw new UnauthorizedError("Refresh token is invalid");
     }
@@ -136,17 +119,11 @@ export async function refresh(data: RefreshBody, userAgent: string): Promise<Ref
         throw new UnauthorizedError("Refresh token expired");
     }
 
-    const user = await getUserById(existingToken.user_id);
-    if (!user) {
-        await deleteRefreshTokenByHash(hash);
-        throw new UnauthorizedError("User no longer exists");
-    }
-
     await deleteRefreshTokenByHash(hash);
-    const tokens = await issueTokensForUser(existingToken.user_id, userAgent);
+    const tokens = await issueTokensForUser(existingToken.user_id, user.public_id, userAgent);
 
     return {
-        user: await toUserPublic(existingToken.user_id),
+        user: await getBaseUserById(existingToken.user_id),
         tokens,
     };
 }
@@ -178,59 +155,69 @@ export function hashRefreshToken(token: string): string {
     return crypto.createHash("sha256").update(token).digest("hex");
 }
 
-export function signAccessToken(userId: bigint): string {
-    return jwt.sign({ typ: "access" }, env.ACCESS_TOKEN_SECRET, {
-        subject: userId.toString(),
-        expiresIn: env.ACCESS_TOKEN_TTL_SECONDS,
-    });
+export function signAccessToken(publicId: string): string {
+    return jwt.sign(
+        {
+            typ: "access",
+            userId: publicId,
+        },
+        env.ACCESS_TOKEN_SECRET,
+        {
+            subject: publicId,
+            expiresIn: env.ACCESS_TOKEN_TTL_SECONDS,
+        },
+    );
 }
 
-export function signRefreshToken(userId: bigint): string {
+export function signRefreshToken(publicId: string): string {
     return jwt.sign(
         {
             typ: "refresh",
             jti: uuidv7(),
+            userId: publicId,
         },
         env.REFRESH_TOKEN_SECRET,
         {
-            subject: userId.toString(),
+            subject: publicId,
             expiresIn: env.REFRESH_TOKEN_TTL_SECONDS,
         },
     );
 }
 
-export function verifyAccessToken(token: string): { userId: bigint } {
+export function verifyAccessToken(token: string): { userId: string } {
     try {
         const payload = parseTokenPayload<AccessPayload>(
             jwt.verify(token, env.ACCESS_TOKEN_SECRET),
             "Invalid access token",
         );
+        const userId = payload.userId ?? payload.sub;
 
-        if (payload.typ !== "access" || !payload.sub) {
+        if (payload.typ !== "access" || !userId) {
             throw new UnauthorizedError("Invalid access token");
         }
 
         return {
-            userId: BigInt(payload.sub),
+            userId,
         };
     } catch {
         throw new UnauthorizedError("Invalid or expired access token");
     }
 }
 
-export function verifyRefreshToken(token: string): { userId: bigint; jti: string } {
+export function verifyRefreshToken(token: string): { userId: string; jti: string } {
     try {
         const payload = parseTokenPayload<RefreshPayload>(
             jwt.verify(token, env.REFRESH_TOKEN_SECRET),
             "Invalid refresh token",
         );
+        const userId = payload.userId ?? payload.sub;
 
-        if (payload.typ !== "refresh" || !payload.sub || !payload.jti) {
+        if (payload.typ !== "refresh" || !userId || !payload.jti) {
             throw new UnauthorizedError("Invalid refresh token");
         }
 
         return {
-            userId: BigInt(payload.sub),
+            userId,
             jti: payload.jti,
         };
     } catch {
@@ -238,8 +225,8 @@ export function verifyRefreshToken(token: string): { userId: bigint; jti: string
     }
 }
 
-export function buildTokenPair(userId: bigint, refreshToken: string): TokenPair {
-    const accessToken = signAccessToken(userId);
+export function buildTokenPair(publicId: string, refreshToken: string): TokenPair {
+    const accessToken = signAccessToken(publicId);
 
     return {
         access_token: accessToken,
